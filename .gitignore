@@ -66,4 +66,7 @@ mlruns/
 mlflow.db
 
 # HuggingFace cache
-.cache/huggingface/
+.cache/huggingface/.env
+key
+.env
+key
