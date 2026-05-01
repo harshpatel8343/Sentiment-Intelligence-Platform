@@ -1,224 +1,200 @@
-# Sentiment Intelligence Platform — E-Commerce Product Reviews
+# 🔍 Sentiment Intelligence Platform
+### Beyond Star Ratings — Aspect-Level Product Intelligence
+
+> An end-to-end NLP pipeline that transforms raw Amazon product reviews into structured, actionable product intelligence — powered by aspect-based sentiment analysis, FAISS similarity search, and a LangChain ReAct agent.
+
+🌐 **Live Demo**: [sentiment-intelligence-platform-textmining.streamlit.app](https://sentiment-intelligence-platform-textmining.streamlit.app)  
+🔑 **Access Password**: `SentimentIQ@2026`  
+📦 **Dataset**: [Amazon Product Reviews — Kaggle](https://www.kaggle.com/datasets/manasabollavarapu/amazon-product-reviews/data)
+
 ---
 
-## Overview
+## 💡 The Problem
 
-Amazon star ratings are often misleading. A product might get 3 stars because shipping was late, not because the product is bad. This project builds a pipeline that goes beyond star ratings to extract *what specifically* customers like or dislike at an aspect level — battery life, build quality, price, etc. — and uses that intelligence to power a smarter, explainable recommendation system.
+A product rated 3★ might have **exceptional taste but terrible packaging**. A 1★ review might be entirely about a delayed shipment, not the product itself. A single star rating collapses all of this nuance into one useless number.
+
+**This platform solves that.** We extract what customers are actually talking about — taste, price, packaging, nutrition — and score each dimension separately. Every product becomes a **13-dimensional sentiment vector** that powers smarter search, gap-fill recommendations, and AI-generated explanations grounded in real reviews.
 
 ---
 
-## Project Structure
+## 🚀 Live Features
 
-```
-sentiment_pipeline/
+| Feature | Description |
+|---------|-------------|
+| 🤖 **AI Product Advisor** | Chat with a ReAct agent powered by Llama 3.3 70B — asks follow-up questions, compares products, fetches real review evidence |
+| 🔍 **Product Explorer** | Visualize any product's sentiment across 13 dimensions with strength/weakness badges |
+| 🔗 **Similar Products** | FAISS cosine similarity search across 691 product vectors |
+| 🎯 **Gap-Fill Recommender** | Find alternatives that score better specifically in a product's weak aspects |
+| 📖 **About** | Project overview, tech stack, and team |
+
+---
+
+## 🧠 Pipeline Architecture
+500,000+ Amazon Reviews
 │
-├── main.py                  ← Entry point — run this
-├── config.py                ← All settings and hyperparameters
-├── preprocess.py            ← Data loading, cleaning, label construction, splits
-├── stage1_classical.py      ← TF-IDF + Logistic Regression & XGBoost
-├── stage2_transformers.py   ← Zero-shot RoBERTa + Fine-tuned distilBERT
-├── utils.py                 ← Shared helpers (evaluate, log_mlflow)
-├── requirements.txt         ← Python dependencies
-└── README.md
-```
+▼
+┌─────────────────────────────────┐
+│  Stage 1 — Classical Baselines  │
+│  VADER · TF-IDF · LogReg · XGB  │
+└─────────────────────────────────┘
+│
+▼
+┌─────────────────────────────────┐
+│  Stage 2 — Transformer Models   │
+│  Zero-shot RoBERTa              │
+│  Fine-tuned DistilBERT          │
+└─────────────────────────────────┘
+│
+▼
+┌─────────────────────────────────┐
+│  Stage 3 — ABSA Pipeline        │
+│  spaCy noun chunks              │
+│  PyABSA triplet extraction      │
+│  76K aspects → 717 → 13 labels  │
+│  Per-product 13-dim vectors     │
+└─────────────────────────────────┘
+│
+▼
+┌─────────────────────────────────┐
+│  Stage 4 — Recommendation       │
+│  FAISS IndexFlatIP              │
+│  Gap-fill recommender           │
+│  ChromaDB (4,963 embeddings)    │
+└─────────────────────────────────┘
+│
+▼
+┌─────────────────────────────────┐
+│  Stage 5 — Agentic LLM Layer    │
+│  LangChain ReAct Agent          │
+│  Llama 3.3 70B via Groq         │
+│  5 custom tools                 │
+│  Grounded explanations          │
+└─────────────────────────────────┘
 
 ---
 
-## Pipeline Stages
+## 📊 Dataset
 
-### Stage 1 — Classical ML Baselines
-Establishes benchmark performance using traditional NLP approaches before applying deep learning.
-
-| Model | Description |
-|---|---|
-| TF-IDF + Logistic Regression | Fast linear baseline with inverse-frequency class weights |
-| TF-IDF + XGBoost | Gradient-boosted trees with per-sample class weights |
-
-### Stage 2 — Transformer Models
-Tests how much deep contextual language understanding improves over the classical baseline.
-
-| Model | Description |
-|---|---|
-| Zero-shot RoBERTa | `cardiffnlp/twitter-roberta-base-sentiment` with no fine-tuning |
-| Fine-tuned distilBERT | `distilbert-base-uncased` fine-tuned on the review dataset |
-
-### Stage 3 — Aspect-Based Sentiment Analysis *(coming soon)*
-Extracts what customers are actually talking about — battery life, build quality, price — not just whether they're positive or negative.
-
-### Stage 4 — Recommendation Engine *(coming soon)*
-FAISS-based similarity search and gap-fill recommender over aspect sentiment vectors.
-
-### Stage 5 — Agentic LLM Layer *(coming soon)*
-LangChain AgentExecutor with ReAct reasoning and natural language explanations.
-
----
-
-## Dataset
-
-**Amazon Product Reviews** — Kaggle  
-https://www.kaggle.com/datasets/manasabollavarapu/amazon-product-reviews/data
-
-| Field | Description |
-|---|---|
-| `Text` | Full review text — primary NLP input |
-| `Score` | Star rating (1–5) — used to construct sentiment labels |
-| `ProductId` | Unique product identifier |
-| `UserId` | Unique user identifier |
-| `Summary` | Short review headline |
+| Field | Description | Role |
+|-------|-------------|------|
+| `Text` | Full review body | Primary NLP input |
+| `Score` | Star rating (1–5) | Pseudo-label for training |
+| `ProductId` | Product identifier | Grouping key for vectors |
+| `UserId` | User identifier | User profile construction |
+| `Summary` | Review headline | Supplementary signal |
 
 **Label Construction:**
-```
-1–2 stars  →  0  (negative)
-3 stars    →  1  (neutral)
-4–5 stars  →  2  (positive)
-```
+1–2 stars  →  Negative
+3 stars    →  Neutral
+4–5 stars  →  Positive
 
 ---
 
-## Setup
-
-### Requirements
-- Python 3.10+
-- Mac users: `brew install libomp` (required for XGBoost)
-
-### Installation
-
-```bash
-# Clone the repo
-git clone <your-repo-url>
-cd sentiment_pipeline
-
-# Create virtual environment
-python -m venv venv
-source venv/bin/activate       # Mac/Linux
-venv\Scripts\activate          # Windows
-
-# Install dependencies
-pip install -r requirements.txt
-```
-
-### Dataset Setup
-1. Download the CSV from Kaggle
-2. Place it in the project folder
-3. Update `config.py`:
-```python
-DATA_PATH  = "your_file_name.csv"
-TEXT_COL   = "Text"     # exact column name in your CSV
-RATING_COL = "Score"    # exact column name in your CSV
-```
-
----
-
-## Running the Pipeline
-
-```bash
-# Activate venv
-source venv/bin/activate
-
-# Run full pipeline
-python main.py
-```
-
-### What happens when you run it:
-```
-1. Preprocessing      → loads CSV, cleans text, builds labels, splits data
-2. Stage 1-A          → trains TF-IDF + Logistic Regression
-3. Stage 1-B          → trains TF-IDF + XGBoost
-4. Stage 2-A          → runs zero-shot RoBERTa on test set
-5. Stage 2-B          → fine-tunes distilBERT (this takes the longest)
-6. Summary            → prints comparison table, saves results to JSON
-```
-
-### Expected runtime (Mac CPU, 50k samples):
-| Stage | Approximate Time |
-|---|---|
-| Preprocessing | ~30 seconds |
-| Logistic Regression | ~1–2 minutes |
-| XGBoost | ~2–3 minutes |
-| Zero-shot RoBERTa | ~2–3 minutes |
-| Fine-tuned distilBERT | ~6–8 hours |
-
-> **Tip:** To do a quick test run, set `SAMPLE_SIZE = 5_000` in `config.py`. distilBERT will finish in ~15–20 minutes.
-
----
-
-## Configuration
-
-All settings are in `config.py`. Key options:
-
-```python
-DATA_PATH   = "amazon_product_reviews.csv"  # path to your CSV
-SAMPLE_SIZE = 50_000    # set to None for full dataset
-BATCH_SIZE  = 32        # reduce to 16 if running out of memory
-NUM_EPOCHS  = 4         # number of training epochs for distilBERT
-```
-
----
-
-## Viewing Results
-
-### Terminal output
-After all stages complete, a summary table is printed:
-```
-═════════════════════════════════════════════════════════
-  Model                             Acc      Macro F1
-═════════════════════════════════════════════════════════
-  TF-IDF + LogReg               0.7668      0.7669
-  TF-IDF + XGBoost              0.7812      0.7801
-  Zero-shot RoBERTa             0.6543      0.6421
-  Fine-tuned distilBERT         0.8321      0.8310
-═════════════════════════════════════════════════════════
-🏆  Best: Fine-tuned distilBERT  (macro_f1 = 0.8310)
-```
-
-### MLflow UI
-```bash
-# In a separate terminal window from the project folder
-mlflow ui --port 5001
-```
-Open **http://localhost:5001** to see all runs, metrics, and saved model artifacts.
-
-### Results JSON
-`models/pipeline_results.json` — saved automatically after every run.
-
----
-
-## Saved Models
-
-| Model | Location |
-|---|---|
-| Logistic Regression | `models/logreg_model.pkl` |
-| XGBoost | `models/xgboost_model.pkl` |
-| Fine-tuned distilBERT | `models/distilbert/best_model/` |
-
-> Note: Both the model and the vectorizer are saved together in the pickle files. You need both to make predictions on new reviews.
-
----
-
-## Evaluation Metrics
-
-| Metric | Why we use it |
-|---|---|
-| **Macro F1** | Primary metric — averages F1 equally across all 3 classes, accounts for class imbalance |
-| **Accuracy** | Secondary metric — can be misleading due to positive-label skew in Amazon reviews |
-
----
-
-## Key Design Decisions
-
-- **Class weighting** — Amazon reviews are heavily positive-skewed (~70% 4–5 star). Both classical and transformer models use inverse-frequency class weights to prevent the model from just predicting positive all the time.
-- **TF-IDF vocabulary fitted on training data only** — prevents data leakage from val/test sets.
-- **Early stopping (patience=2)** — stops distilBERT training if validation macro F1 doesn't improve for 2 consecutive epochs, saving compute and preventing overfitting.
-- **Stratified splits** — train/val/test splits preserve the class distribution so evaluation is fair.
-
----
-
-## Tech Stack
+## 🛠️ Tech Stack
 
 | Layer | Tools |
-|---|---|
-| Data processing | pandas, scikit-learn |
-| Classical ML | TF-IDF, Logistic Regression, XGBoost |
-| Deep learning | HuggingFace Transformers, distilBERT, RoBERTa |
-| Experiment tracking | MLflow |
-| Coming soon | spaCy, PyABSA, FAISS, ChromaDB, LangChain, FastAPI, Streamlit |
+|-------|-------|
+| Data & ETL | pandas, PySpark, pyarrow |
+| Classical NLP | VADER, TF-IDF, Logistic Regression, XGBoost |
+| Deep NLP | HuggingFace Transformers, DistilBERT, RoBERTa |
+| ABSA | PyABSA, spaCy, Sentence-Transformers, KMeans |
+| Recommendation | FAISS, ChromaDB, numpy |
+| Agentic LLM | LangChain, Llama 3.3 70B, Groq |
+| Experiment Tracking | MLflow |
+| Frontend | Streamlit |
+| Storage | Git LFS |
+| Deployment | Streamlit Cloud |
+
+---
+
+## 📁 Project Structure
+Sentiment-Intelligence-Platform/
+│
+├── app.py                          # Streamlit dashboard (all 5 pages)
+├── requirements.txt                # Python dependencies
+├── .python-version                 # Python 3.11 (for Streamlit Cloud)
+│
+├── models/
+│   ├── absa/
+│   │   ├── product_aspect_vectors.csv   # 691 × 13 sentiment vectors
+│   │   ├── aspect_taxonomy_map.json     # raw aspect → taxonomy mapping
+│   │   └── product_names.csv            # ProductId → display name
+│   └── stage4/
+│       └── chroma_db/                   # ChromaDB review embeddings
+│
+├── stage1_classical.py             # VADER, TF-IDF, LogReg, XGBoost
+├── stage2_transformers.py          # RoBERTa zero-shot + DistilBERT fine-tuning
+├── stage3_normalization.ipynb      # ABSA + KMeans taxonomy normalization
+├── stage4_recommendation.ipynb     # FAISS + ChromaDB pipeline
+└── stage5_agentic_llm.ipynb        # LangChain ReAct agent
+
+---
+
+## ⚙️ Local Setup
+
+```bash
+# 1. Clone the repo
+git clone https://github.com/harshpatel8343/Sentiment-Intelligence-Platform.git
+cd Sentiment-Intelligence-Platform
+
+# 2. Install dependencies
+pip install -r requirements.txt
+
+# 3. Set environment variables
+# Create a .env file:
+echo "GROQ_API_KEY=your_key_here" > .env
+echo "APP_PASSWORD=your_password_here" >> .env
+
+# 4. Run the app
+streamlit run app.py
+```
+
+Get a free Groq API key (no credit card) at [console.groq.com](https://console.groq.com)
+
+---
+
+## 📈 Key Results
+
+| Stage | Output |
+|-------|--------|
+| Stage 1 Baselines | Macro F1: LogReg ~0.77, XGBoost ~0.78 |
+| Stage 2 Transformers | Fine-tuned DistilBERT Macro F1: ~0.83 |
+| Stage 3 ABSA | 76K raw aspects → 717 cleaned → 13 taxonomy labels |
+| Stage 4 Vectors | 691 products × 13 sentiment dimensions |
+| Stage 5 Agent | Grounded recommendations with real review evidence |
+
+---
+
+## 🎯 Key Design Decisions
+
+**Why aspect-level?** Star ratings are misleading — a 3★ product might be excellent on taste but poor on packaging. Aspect-level sentiment captures this nuance.
+
+**Why KMeans for taxonomy?** We clustered 717 cleaned aspects using Sentence-Transformers embeddings. This let us normalize noisy extracted phrases into interpretable labels without manual labeling of all 717 terms.
+
+**Why gap-fill recommender?** Standard similarity search finds products that are similar overall. Gap-fill specifically finds products that are better in the exact dimensions where the current product falls short — much more useful for users.
+
+**Why ReAct agent?** The agent autonomously chains tool calls — searching by keyword, comparing aspect profiles, fetching real reviews — without being told which tools to use. This makes responses grounded and explainable.
+
+---
+
+## 👥 Team
+
+| Name | NetID | Institution |
+|------|-------|-------------|
+| Harsh Patel | harshnp2 | UIUC |
+| Aman Joshi | abj4 | UIUC |
+| Shithil Shetty | shetty7 | UIUC |
+| Kanishka Gupta | kgupta17 | UIUC |
+
+---
+
+## 📚 Course
+
+**IS567 — Text Mining** · Spring 2026  
+University of Illinois Urbana-Champaign
+
+---
+
+## 📄 License
+
+This project is for academic purposes only.
