@@ -1,8 +1,8 @@
 streamlit
 pandas
-numpy
+numpy==1.26.4
 faiss-cpu
-chromadb==0.4.24
+chromadb==0.5.23
 scikit-learn
 plotly
 langchain
@@ -11,4 +11,3 @@ langchain-community
 langchain-core
 python-dotenv
 sentence-transformers
-protobuf==3.20.3
