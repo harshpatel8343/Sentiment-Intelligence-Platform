@@ -4,7 +4,6 @@
 > An end-to-end NLP pipeline that transforms raw Amazon product reviews into structured, actionable product intelligence — powered by aspect-based sentiment analysis, FAISS similarity search, and a LangChain ReAct agent.
 
 🌐 **Live Demo**: [sentiment-intelligence-platform-textmining.streamlit.app](https://sentiment-intelligence-platform-textmining.streamlit.app)  
-🔑 **Access Password**: `SentimentIQ@2026`  
 📦 **Dataset**: [Amazon Product Reviews — Kaggle](https://www.kaggle.com/datasets/manasabollavarapu/amazon-product-reviews/data)
 
 ---
